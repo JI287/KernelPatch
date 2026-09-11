@@ -18,49 +18,18 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      ARCH: arm64
-      LLVM_VERSION: clang-r487747c
     steps:
-      - name: Resolve KMI version
-        id: resolve_kmi
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "KMI=${{ github.event.inputs.kmi }}" >> $GITHUB_ENV
-          else
-            echo "KMI=android15-6.6" >> $GITHUB_ENV
-          fi
-          echo "PREBUILT_DIR=/tmp/gki-prebuilt/${{ env.KMI }}" >> $GITHUB_ENV
-
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y build-essential wget tar unzip libelf-dev
-
-      - name: Download prebuilt GKI artifacts
-        run: |
-          mkdir -p ${{ env.PREBUILT_DIR }}
-          cd ${{ env.PREBUILT_DIR }}
-          # 拉取谷歌官方GKI预编译包（包含 Module.symvers + 编译模块所需全部头文件）
-          wget -q https://storage.googleapis.com/android_gki_releases/${{ env.KMI }}/dist.tar.gz
-          tar -xf dist.tar.gz
-          cd -
-
-      - name: Build out-of-tree kpms module
-        run: |
-          cd kpms
-          make -C ${{ env.PREBUILT_DIR }}/dist \
-            M=${PWD} \
-            ARCH=${{ env.ARCH }} \
-            LLVM=1 \
-            LLVM_IAS=1 \
-            modules
+      - name: Build GKI out-of-tree module
+        uses: feicong/android-kernel-build-action@v2
+        with:
+          kernel_version: ${{ github.event.inputs.kmi || 'android15-6.6' }}
+          module_dir: kpms
 
       - name: Upload ko artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kpms-${{ env.KMI }}
+          name: kpms-${{ github.event.inputs.kmi || 'android15-6.6' }}
           path: kpms/*.ko
