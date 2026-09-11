@@ -59,9 +59,9 @@ jobs:
           fi
           cd ${{ env.KERNEL_DIR }}
           make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} gki_defconfig
-          make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} prepare
-          make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} modules_prepare
-          # 下载官方 Module.symvers，覆盖掉生成的空版本
+          # 只导出头文件，跳过checksyscalls.sh
+          make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} headers
+          # 下载官方 Module.symvers
           wget -q -O Module.symvers.gz ${{ env.SYMVERS_URL }}
           gunzip -f Module.symvers.gz
           cd -
