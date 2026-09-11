@@ -19,11 +19,19 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      KMI: ${{ github.event.inputs.kmi }}
       ARCH: arm64
       CROSS_COMPILE: aarch64-linux-gnu-
-      KERNEL_DIR: kernel/${{ github.event.inputs.kmi }}
     steps:
+      - name: Resolve KMI version
+        id: resolve_kmi
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "KMI=${{ github.event.inputs.kmi }}" >> $GITHUB_ENV
+          else
+            echo "KMI=android15-6.6" >> $GITHUB_ENV
+          fi
+          echo "KERNEL_DIR=kernel/${{ env.KMI }}" >> $GITHUB_ENV
+
       - name: Checkout source
         uses: actions/checkout@v4
 
@@ -42,7 +50,10 @@ jobs:
       - name: Download & prepare GKI kernel
         run: |
           mkdir -p kernel
+          echo "Target kernel: ${{ env.KMI }}"
+          echo "Kernel path: ${{ env.KERNEL_DIR }}"
           if [ ! -d "${{ env.KERNEL_DIR }}/.git" ]; then
+            echo "Cloning kernel repo..."
             git clone --depth=1 -b ${{ env.KMI }} https://android.googlesource.com/kernel/common ${{ env.KERNEL_DIR }}
           fi
           cd ${{ env.KERNEL_DIR }}
