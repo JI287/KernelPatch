@@ -31,8 +31,12 @@ jobs:
           sudo apt update
           sudo apt install -y build-essential libelf-dev bc bison flex libssl-dev
 
-      - name: List tools dir for debug
-        run: ls -la tools/
+      - name: Debug ls root & tools
+        run: |
+          echo "==== Root files ===="
+          ls -la
+          echo "==== tools folder ===="
+          ls -la tools/
 
       - name: Setup DDK
         run: |
