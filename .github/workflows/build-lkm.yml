@@ -1,5 +1,4 @@
-name: Build KPMS Cross Compile
-
+name: Build KPMS Kbuild
 on:
   push:
     branches: [ main ]
@@ -27,29 +26,29 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Install cross compile dependencies
+      - name: Install toolchain & build dependencies
         run: |
           sudo apt update
-          sudo apt install -y build-essential cmake libelf-dev bc flex bison
-          sudo apt install -y aarch64-linux-gnu-gcc aarch64-linux-gnu-g++
+          sudo apt install -y build-essential bc flex bison libelf-dev
+          sudo apt install -y aarch64-linux-gnu-gcc aarch64-linux-gnu-git
 
-      - name: Download GKI kernel headers
+      - name: Download GKI kernel source
         run: |
           mkdir -p kernel
           cd kernel
-          # 拉取对应KMI的GKI开发包（google gki）
-          curl -L -O https://dl.google.com/android/gki/kernel_${{ env.KMI }}.tar.gz
-          tar -xf kernel_${{ env.KMI }}.tar.gz
-          cd ..
+          git clone --depth=1 -b common-${{ env.KMI }} https://android.googlesource.com/kernel/common ${{ env.KMI }}
+          cd ${{ env.KMI }}
+          make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} defconfig
+          make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} prepare
+          cd ../../
 
-      - name: Build kpms module
+      - name: Build out-of-tree kpms module
         run: |
-          mkdir build && cd build
-          cmake ../kpms -DKMI=${{ env.KMI }} -DKERNEL_ROOT=${PWD}/../kernel/kernel_${{ env.KMI }}
-          make -j$(nproc)
+          cd kpms
+          make -C ../kernel/${{ env.KMI }} M=${PWD} ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} modules
 
-      - name: Upload compiled ko
+      - name: Upload ko artifact
         uses: actions/upload-artifact@v4
         with:
           name: kpms-${{ env.KMI }}
-          path: build/*.ko
+          path: kpms/*.ko
