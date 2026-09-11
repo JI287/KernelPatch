@@ -53,7 +53,7 @@ jobs:
       - name: Build out-of-tree kpms module
         run: |
           cd kpms
-          make -C ../${{ env.KERNEL_DIR }} M=${PWD} ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} modules
+          make -C ../${{ env.KERNEL_DIR }} M=${PWD} ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} KBUILD_MODPOST_WARN=1 modules
 
       - name: Upload ko artifact
         uses: actions/upload-artifact@v4
