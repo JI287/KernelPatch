@@ -19,21 +19,19 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        kmi: [ ${{ inputs.kmi }} ]
+    env:
+      KMI: ${{ github.event.inputs.kmi }}
+      DDK_RELEASE: 20260313
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
 
       - name: Build KPMS module
         run: |
-          export KMI=${{ matrix.kmi }}
-          export DDK_RELEASE=20260313
           make -C kpms KMI=${KMI}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: kpms-module-${{ matrix.kmi }}
+          name: kpms-module-${{ env.KMI }}
           path: kpms/*.ko
