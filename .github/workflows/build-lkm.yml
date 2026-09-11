@@ -1,4 +1,4 @@
-name: Build KernelPatch LKMs
+name: Build KPMS Cross Compile
 
 on:
   push:
@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       kmi:
-        description: '选择KMI版本'
+        description: Android GKI KMI
         required: true
-        default: 'android15-6.6'
+        default: android15-6.6
         type: choice
         options:
           - android15-6.6
@@ -21,27 +21,35 @@ jobs:
     runs-on: ubuntu-latest
     env:
       KMI: ${{ github.event.inputs.kmi }}
+      ARCH: aarch64
+      CROSS_COMPILE: aarch64-linux-gnu-
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Install compile dependencies
+      - name: Install cross compile dependencies
         run: |
           sudo apt update
-          sudo apt install -y build-essential libelf-dev bc bison flex libssl-dev
+          sudo apt install -y build-essential cmake libelf-dev bc flex bison
+          sudo apt install -y aarch64-linux-gnu-gcc aarch64-linux-gnu-g++
 
-      - name: Check files before build
+      - name: Download GKI kernel headers
         run: |
-          ls -la
-          echo "==== Check kernel headers folder ===="
-          ls -la kernel/ || echo "kernel文件夹不存在"
+          mkdir -p kernel
+          cd kernel
+          # 拉取对应KMI的GKI开发包（google gki）
+          curl -L -O https://dl.google.com/android/gki/kernel_${{ env.KMI }}.tar.gz
+          tar -xf kernel_${{ env.KMI }}.tar.gz
+          cd ..
 
-      - name: Build full KernelPatch
+      - name: Build kpms module
         run: |
-          make KMI=${KMI}
+          mkdir build && cd build
+          cmake ../kpms -DKMI=${{ env.KMI }} -DKERNEL_ROOT=${PWD}/../kernel/kernel_${{ env.KMI }}
+          make -j$(nproc)
 
-      - name: Upload compiled ko artifacts
+      - name: Upload compiled ko
         uses: actions/upload-artifact@v4
         with:
-          name: kpms-modules-${{ env.KMI }}
-          path: lkm/*.ko
+          name: kpms-${{ env.KMI }}
+          path: build/*.ko
