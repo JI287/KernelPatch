@@ -30,7 +30,7 @@ jobs:
           else
             echo "KMI=android15-6.6" >> $GITHUB_ENV
           fi
-          echo "KERNEL_DIR=kernel/${{ env.KMI }}" >> $GITHUB_ENV
+          echo "KERNEL_DIR=/tmp/gki-kernel/${{ env.KMI }}" >> $GITHUB_ENV
 
       - name: Checkout source
         uses: actions/checkout@v4
@@ -45,13 +45,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.KERNEL_DIR }}
-          key: kernel-${{ env.KMI }}
+          key: gki-kernel-${{ env.KMI }}
 
       - name: Download & prepare GKI kernel
         run: |
-          mkdir -p kernel
           echo "Target kernel: ${{ env.KMI }}"
           echo "Kernel path: ${{ env.KERNEL_DIR }}"
+          mkdir -p /tmp/gki-kernel
           if [ ! -d "${{ env.KERNEL_DIR }}/.git" ]; then
             echo "Cloning kernel repo..."
             git clone --depth=1 -b ${{ env.KMI }} https://android.googlesource.com/kernel/common ${{ env.KERNEL_DIR }}
@@ -60,12 +60,12 @@ jobs:
           make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} gki_defconfig
           make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} prepare
           make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} modules_prepare
-          cd ../../
+          cd -
 
       - name: Build out-of-tree kpms module
         run: |
           cd kpms
-          make -C ../${{ env.KERNEL_DIR }} M=${PWD} \
+          make -C ${{ env.KERNEL_DIR }} M=${PWD} \
             ARCH=${{ env.ARCH }} \
             CROSS_COMPILE=${{ env.CROSS_COMPILE }} \
             MODPOST=0 \
