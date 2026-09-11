@@ -1,27 +1,44 @@
 name: Build KernelPatch LKMs (matrix)
 
 on:
-  workflow_dispatch:
   push:
-    paths:
-      - 'lkm/**'
-  pull_request:
-    paths:
-      - 'lkm/**'
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      kmi:
+        description: '选择目标KMI版本'
+        required: true
+        default: 'android15-6.6'
+        type: choice
+        options:
+          - android15-6.6
+          - android14-5.15
+          - android13-5.10
+          - android12-5.4
 
 jobs:
-  build-lkm:
+  build:
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        kmi:
-          - android12-5.10
-          - android13-5.10
-          - android13-5.15
-          - android14-5.15
-          - android14-6.1
-          - android15-6.6
-          - android16-6.12
-    uses: ./.github/workflows/build-ddk.yml
-    with:
-      kmi: ${{ matrix.kmi }}
-      ddk_release: '20260313'
+        kmi: [ ${{ inputs.kmi }} ]
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up environment
+        run: |
+          sudo apt update
+          sudo apt install -y make clang llvm binutils
+
+      - name: Build KPMS module
+        run: |
+          export KMI=${{ matrix.kmi }}
+          export DDK_RELEASE=20260313
+          make -C kpms KMI=${KMI}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kpms-module-${{ matrix.kmi }}
+          path: kpms/*.ko
