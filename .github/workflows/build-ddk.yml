@@ -12,6 +12,22 @@ on:
         required: false
         default: '20260313'
         type: string
+  workflow_dispatch:
+    inputs:
+      kmi:
+        description: 'KMI version'
+        required: true
+        default: 'android14-5.15'
+        type: choice
+        options:
+          - android14-5.15
+          - android13-5.10
+          - android12-5.4
+      ddk_release:
+        description: 'DDK release version'
+        required: false
+        default: '20260313'
+        type: string
 
 jobs:
   build-kp-lkm:
@@ -41,3 +57,4 @@ jobs:
       with:
         name: ${{ inputs.kmi }}-lkm
         path: /github/workspace/out/${{ inputs.kmi }}_kernelpatch.ko
+
