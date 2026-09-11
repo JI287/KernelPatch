@@ -1,4 +1,4 @@
 obj-m += kpms.o
-kpms-y += main.o hook.o
+kpms-y += module.o func.o
 
 PWD := $(shell pwd)
