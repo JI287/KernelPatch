@@ -28,10 +28,10 @@ jobs:
 
       - name: Build KPMS module
         run: |
-          make -C kpms KMI=${KMI}
+          make -C kpms/MemoryDriver_IOCTLhook/src KMI=${KMI}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: kpms-module-${{ env.KMI }}
-          path: kpms/*.ko
+          path: kpms/MemoryDriver_IOCTLhook/src/*.ko
