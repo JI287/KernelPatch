@@ -43,7 +43,7 @@ jobs:
         run: |
           mkdir -p kernel
           if [ ! -d "${{ env.KERNEL_DIR }}/.git" ]; then
-            git clone --depth=1 -b common-${{ env.KMI }} https://android.googlesource.com/kernel/common ${{ env.KERNEL_DIR }}
+            git clone --depth=1 -b ${{ env.KMI }} https://android.googlesource.com/kernel/common ${{ env.KERNEL_DIR }}
           fi
           cd ${{ env.KERNEL_DIR }}
           make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} defconfig
