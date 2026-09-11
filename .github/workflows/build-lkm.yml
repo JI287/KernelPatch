@@ -31,8 +31,12 @@ jobs:
           sudo apt update
           sudo apt install -y build-essential libelf-dev bc bison flex libssl-dev
 
-      - name: Download DDK
+      - name: List tools dir for debug
+        run: ls -la tools/
+
+      - name: Setup DDK
         run: |
+          chmod +x tools/setup_ddk.sh
           ./tools/setup_ddk.sh ${DDK_RELEASE}
 
       - name: Build
