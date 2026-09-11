@@ -22,6 +22,7 @@ jobs:
       KMI: ${{ github.event.inputs.kmi }}
       ARCH: aarch64
       CROSS_COMPILE: aarch64-linux-gnu-
+      KERNEL_DIR: kernel/${{ github.event.inputs.kmi }}
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -30,14 +31,21 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y build-essential bc flex bison libelf-dev
-          sudo apt install -y aarch64-linux-gnu-gcc aarch64-linux-gnu-git
+          sudo apt install -y aarch64-linux-gnu-gcc aarch64-linux-gnu-g++
 
-      - name: Download GKI kernel source
+      - name: Cache kernel source
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.KERNEL_DIR }}
+          key: kernel-${{ env.KMI }}
+
+      - name: Download GKI kernel source (if cache miss)
         run: |
           mkdir -p kernel
-          cd kernel
-          git clone --depth=1 -b common-${{ env.KMI }} https://android.googlesource.com/kernel/common ${{ env.KMI }}
-          cd ${{ env.KMI }}
+          if [ ! -d "${{ env.KERNEL_DIR }}/.git" ]; then
+            git clone --depth=1 -b common-${{ env.KMI }} https://android.googlesource.com/kernel/common ${{ env.KERNEL_DIR }}
+          fi
+          cd ${{ env.KERNEL_DIR }}
           make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} defconfig
           make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} prepare
           cd ../../
@@ -45,7 +53,7 @@ jobs:
       - name: Build out-of-tree kpms module
         run: |
           cd kpms
-          make -C ../kernel/${{ env.KMI }} M=${PWD} ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} modules
+          make -C ../${{ env.KERNEL_DIR }} M=${PWD} ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} modules
 
       - name: Upload ko artifact
         uses: actions/upload-artifact@v4
