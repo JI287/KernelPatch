@@ -31,8 +31,7 @@ jobs:
             echo "KMI=android15-6.6" >> $GITHUB_ENV
           fi
           echo "KERNEL_DIR=/tmp/gki-kernel/${{ env.KMI }}" >> $GITHUB_ENV
-          echo "KMI=$KMI"
-          echo "KERNEL_DIR=$KERNEL_DIR"
+          echo "SYMVERS_URL=https://android.googlesource.com/kernel/common/+archive/refs/heads/${{ env.KMI }}/Module.symvers.gz" >> $GITHUB_ENV
 
       - name: Checkout source
         uses: actions/checkout@v4
@@ -40,7 +39,7 @@ jobs:
       - name: Install toolchain & build dependencies
         run: |
           sudo apt update
-          sudo apt install -y build-essential bc flex bison libelf-dev
+          sudo apt install -y build-essential bc flex bison libelf-dev wget gzip
           sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
 
       - name: Cache kernel source
@@ -49,7 +48,7 @@ jobs:
           path: ${{ env.KERNEL_DIR }}
           key: gki-kernel-${{ env.KMI }}
 
-      - name: Download & prepare GKI kernel
+      - name: Prepare kernel source & Module.symvers
         run: |
           echo "Target kernel: ${{ env.KMI }}"
           echo "Kernel path: ${{ env.KERNEL_DIR }}"
@@ -62,6 +61,9 @@ jobs:
           make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} gki_defconfig
           make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} prepare
           make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} modules_prepare
+          # 下载官方 Module.symvers，覆盖掉生成的空版本
+          wget -q -O Module.symvers.gz ${{ env.SYMVERS_URL }}
+          gunzip -f Module.symvers.gz
           cd -
 
       - name: Build out-of-tree kpms module
@@ -70,7 +72,6 @@ jobs:
           make -C ${{ env.KERNEL_DIR }} M=${PWD} \
             ARCH=${{ env.ARCH }} \
             CROSS_COMPILE=${{ env.CROSS_COMPILE }} \
-            KBUILD_MODPOST_WARN=1 \
             modules
 
       - name: Upload ko artifact
