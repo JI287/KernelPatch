@@ -26,7 +26,16 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Build KPMS
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential libelf-dev bc bison flex libssl-dev
+
+      - name: Download DDK
+        run: |
+          ./tools/setup_ddk.sh ${DDK_RELEASE}
+
+      - name: Build
         run: |
           make KMI=${KMI}
 
