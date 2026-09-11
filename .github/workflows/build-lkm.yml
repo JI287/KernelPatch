@@ -26,12 +26,12 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Build KPMS module
+      - name: Build KPMS
         run: |
-          make -C kpms/MemoryDriver_IOCTLhook/src KMI=${KMI}
+          make KMI=${KMI}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: kpms-module-${{ env.KMI }}
-          path: kpms/MemoryDriver_IOCTLhook/src/*.ko
+          path: lkm/*.ko
