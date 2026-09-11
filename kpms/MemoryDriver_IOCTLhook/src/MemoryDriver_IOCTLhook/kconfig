@@ -1,0 +1,4 @@
+config KPMS_MEMORYDRIVER_IOCTLHOOK
+    tristate "MemoryDriver IOCTL Hook"
+    help
+      KPMS module to hook memory driver ioctl.
