@@ -31,7 +31,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y build-essential bc flex bison libelf-dev
-          sudo apt install -y aarch64-linux-gnu-gcc aarch64-linux-gnu-g++
+          sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
 
       - name: Cache kernel source
         uses: actions/cache@v4
