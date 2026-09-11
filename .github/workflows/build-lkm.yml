@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       KMI: ${{ github.event.inputs.kmi }}
-      ARCH: aarch64
+      ARCH: arm64
       CROSS_COMPILE: aarch64-linux-gnu-
       KERNEL_DIR: kernel/${{ github.event.inputs.kmi }}
     steps:
@@ -46,7 +46,7 @@ jobs:
             git clone --depth=1 -b ${{ env.KMI }} https://android.googlesource.com/kernel/common ${{ env.KERNEL_DIR }}
           fi
           cd ${{ env.KERNEL_DIR }}
-          make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} defconfig
+          make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} gki_defconfig
           make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} prepare
           cd ../../
 
