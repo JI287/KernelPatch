@@ -1,4 +1,4 @@
-name: Build KPMS Kbuild
+name: Build KPMS LKM
 on:
   push:
     branches: [ main ]
@@ -39,7 +39,7 @@ jobs:
           path: ${{ env.KERNEL_DIR }}
           key: kernel-${{ env.KMI }}
 
-      - name: Download GKI kernel source (if cache miss)
+      - name: Download & prepare GKI kernel
         run: |
           mkdir -p kernel
           if [ ! -d "${{ env.KERNEL_DIR }}/.git" ]; then
@@ -48,12 +48,18 @@ jobs:
           cd ${{ env.KERNEL_DIR }}
           make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} gki_defconfig
           make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} prepare
+          make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} modules_prepare
           cd ../../
 
       - name: Build out-of-tree kpms module
         run: |
           cd kpms
-          make -C ../${{ env.KERNEL_DIR }} M=${PWD} ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} KBUILD_MODPOST_WARN=1 modules
+          make -C ../${{ env.KERNEL_DIR }} M=${PWD} \
+            ARCH=${{ env.ARCH }} \
+            CROSS_COMPILE=${{ env.CROSS_COMPILE }} \
+            KBUILD_MODPOST_WARN=1 \
+            KBUILD_EXTRA_SYMBOLS=../${{ env.KERNEL_DIR }}/Module.symvers \
+            modules
 
       - name: Upload ko artifact
         uses: actions/upload-artifact@v4
