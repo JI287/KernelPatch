@@ -21,7 +21,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       KMI: ${{ github.event.inputs.kmi }}
-      DDK_RELEASE: 20260313
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -37,18 +36,3 @@ jobs:
           ls -la
           echo "==== tools folder ===="
           ls -la tools/
-
-      - name: Setup DDK
-        run: |
-          chmod +x tools/setup_ddk.sh
-          ./tools/setup_ddk.sh ${DDK_RELEASE}
-
-      - name: Build
-        run: |
-          make KMI=${KMI}
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: kpms-module-${{ env.KMI }}
-          path: lkm/*.ko
