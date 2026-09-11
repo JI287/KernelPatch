@@ -31,6 +31,8 @@ jobs:
             echo "KMI=android15-6.6" >> $GITHUB_ENV
           fi
           echo "KERNEL_DIR=/tmp/gki-kernel/${{ env.KMI }}" >> $GITHUB_ENV
+          echo "KMI=$KMI"
+          echo "KERNEL_DIR=$KERNEL_DIR"
 
       - name: Checkout source
         uses: actions/checkout@v4
@@ -68,7 +70,7 @@ jobs:
           make -C ${{ env.KERNEL_DIR }} M=${PWD} \
             ARCH=${{ env.ARCH }} \
             CROSS_COMPILE=${{ env.CROSS_COMPILE }} \
-            MODPOST=0 \
+            KBUILD_MODPOST_WARN=1 \
             modules
 
       - name: Upload ko artifact
