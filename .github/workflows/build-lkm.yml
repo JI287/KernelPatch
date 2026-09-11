@@ -18,18 +18,61 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      ARCH: arm64
+      CROSS_COMPILE: aarch64-linux-gnu-
     steps:
+      - name: Resolve KMI version
+        id: resolve_kmi
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "KMI=${{ github.event.inputs.kmi }}" >> $GITHUB_ENV
+          else
+            echo "KMI=android15-6.6" >> $GITHUB_ENV
+          fi
+          echo "KERNEL_DIR=/tmp/gki-kernel/${{ env.KMI }}" >> $GITHUB_ENV
+
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Build GKI out-of-tree module
-        uses: feicong/android-kernel-build-action@v2
+      - name: Install toolchain & build dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential bc flex bison libelf-dev wget gzip
+          sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
+
+      - name: Cache kernel source
+        uses: actions/cache@v4
         with:
-          kernel_version: ${{ github.event.inputs.kmi || 'android15-6.6' }}
-          module_dir: kpms
+          path: ${{ env.KERNEL_DIR }}
+          key: gki-kernel-${{ env.KMI }}
+
+      - name: Prepare kernel source
+        run: |
+          echo "Target kernel: ${{ env.KMI }}"
+          echo "Kernel path: ${{ env.KERNEL_DIR }}"
+          mkdir -p /tmp/gki-kernel
+          if [ ! -d "${{ env.KERNEL_DIR }}/.git" ]; then
+            echo "Cloning kernel repo..."
+            git clone --depth=1 -b ${{ env.KMI }} https://android.googlesource.com/kernel/common ${{ env.KERNEL_DIR }}
+          fi
+          cd ${{ env.KERNEL_DIR }}
+          make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} gki_defconfig
+          make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} prepare
+          make ARCH=${{ env.ARCH }} CROSS_COMPILE=${{ env.CROSS_COMPILE }} modules_prepare
+          cd -
+
+      - name: Build out-of-tree kpms module (warn symbol only)
+        run: |
+          cd kpms
+          make -C ${{ env.KERNEL_DIR }} M=${PWD} \
+            ARCH=${{ env.ARCH }} \
+            CROSS_COMPILE=${{ env.CROSS_COMPILE }} \
+            KBUILD_MODPOST_WARN=1 \
+            modules
 
       - name: Upload ko artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kpms-${{ github.event.inputs.kmi || 'android15-6.6' }}
+          name: kpms-${{ env.KMI }}
           path: kpms/*.ko
